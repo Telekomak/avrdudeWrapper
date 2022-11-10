@@ -24,7 +24,7 @@ namespace AVRDudeWrapper
                 Console.WriteLine("Enter port name:");
 
                 string? portName = Console.ReadLine();
-                if (portName is null or "") preset.Port = portName;
+                if (portName is not null or "") preset.Port = portName;
             }
             
             RunAVRDude(preset, sourceFilename);
@@ -85,15 +85,27 @@ namespace AVRDudeWrapper
                 PrintError($"File '{filename}' does not exist!");
                 return false;
             }
-            
+
             using (FileStream jsonStream = new FileStream(filename, FileMode.Open))
-                _presets = (IEnumerable<Preset>)JsonSerializer.Deserialize(jsonStream, _presets.GetType());
+            {
+                try 
+                {
+                    _presets = (IEnumerable<Preset>)JsonSerializer.Deserialize(jsonStream, _presets.GetType());
+                }
+                catch (Exception e)
+                {
+                    PrintError("Invalid json format!");
+                    return false;
+                }    
+            }
+            
 
             return true;
         }
 
         private static void SavePresets(string filename)
         {
+            if (!File.Exists(filename)) return;
             using (FileStream jsonStream = new FileStream(filename, FileMode.Truncate))
                 JsonSerializer.Serialize(jsonStream, _presets, _presets.GetType());
         }
